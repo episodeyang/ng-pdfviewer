@@ -18,7 +18,8 @@ directive('pdfviewer', [ '$parse', function($parse) {
 			onPageLoad: '&',
 			loadProgress: '&',
 			src: '@',
-			id: '='
+			id: '=',
+			pdfUri: '=pdfUri'
 		},
 		controller: [ '$scope', function($scope) {
 			$scope.pageNum = 1;
@@ -120,6 +121,12 @@ directive('pdfviewer', [ '$parse', function($parse) {
 					scope.loadPDF(scope.src);
 				}
 			});
+			scope.$watch('pdfUri', function (newVal, oldVal){
+				/* somehow initial load always have oldVal updated. */
+				//if (newVal === oldVal) return ;
+				scope.pageNum = 1;
+				scope.loadPDF(scope.pdfUri);
+			})
 		}
 	};
 }]).
