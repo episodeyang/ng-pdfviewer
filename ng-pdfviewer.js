@@ -39,17 +39,8 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				}
 			};
 			$scope.setScale = function (newValue) {
-				console.log('inside scope.setScale');
-				console.log(newValue);
-				if (newValue === 'byWidth') {
-					var windowWidth = $scope.scrollWindow[0].offsetWidth;
-					$scope.scale = windowWidth/$scope.page.getViewport(1).width;
-				} else if (angular.isNumber(newValue) && newValue !== 0) {
-					$scope.scale = newValue;
-					$scope.forceReRender = true;
-				} else {
-					$scope.scale = 1;
-				}
+                $scope.scale = newValue;
+                $scope.forceReRender = true;
 			};
 			$scope.setScaleAndRender = function(scale) {
 				console.log("set scale and render");
@@ -58,17 +49,17 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 			};
 			$scope.incScale = function () {
 				console.log("inc scale");
-				$scope.setScale($scope.scale * 1.1);
+				$scope.setScale($scope.currentScale * 1.1);
 				$scope.renderDocument();
 			};
 			$scope.decScale = function () {
 				console.log("dec scale");
-				$scope.setScale($scope.scale * 0.9);
+				$scope.setScale($scope.currentScale * 0.9);
 				$scope.renderDocument();
 			};
 			$scope.fitByWidth = function () {
-				console.log("fitByWidth");
-				$scope.setScale('byWidth');
+				console.log("fit viewport by width");
+				$scope.setScale('fitWidth');
 				$scope.renderDocument();
 			};
 			function b64toBlob(b64Data, contentType, sliceSize) {
@@ -146,9 +137,18 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
                 }
 				$scope.pdfDoc.getPage(num).then(function(page) {
 					$scope.page = page;
-					var viewport = page.getViewport($scope.scale);
-					var ctx = canvas.getContext('2d');
-
+					var viewport, ctx, windowWidth;
+					if (angular.isNumber($scope.scale) ) {
+						$scope.currentScale = $scope.scale == 0 ? 1 : $scope.scale;
+					} else if ($scope.scale === 'fitWidth') {
+						windowWidth = $scope.scrollWindow[0].offsetWidth;
+						$scope.currentScale = windowWidth / $scope.page.getViewport(1).width;
+					} else if (!$scope.currentScale) {
+						$scope.currentScale = 1;
+					}
+					console.log($scope.currentScale);
+					viewport = page.getViewport($scope.currentScale);
+					ctx = canvas.getContext('2d');
 					canvas.height = viewport.height;
 					canvas.width = viewport.width;
 
