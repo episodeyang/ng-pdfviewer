@@ -15,8 +15,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 		restrict: "E",
 		template:
 			'<div class="scroll-window"></div>' +
-            '<div class="control-popover">' +
-			'</div>',
+            '<div class="control-popover"></div>',
 		scope: {
 			onPageLoad: '&',
 			loadProgress: '&',
@@ -44,7 +43,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				console.log(newValue);
 				if (newValue === 'byWidth') {
 					var windowWidth = $scope.scrollWindow[0].offsetWidth;
-					$scope.scale = windowWidth/page.getViewport(1).width;
+					$scope.scale = windowWidth/$scope.page.getViewport(1).width;
 				} else if (angular.isNumber(newValue) && newValue !== 0) {
 					$scope.scale = newValue;
 					$scope.forceReRender = true;
@@ -146,6 +145,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
                     return;
                 }
 				$scope.pdfDoc.getPage(num).then(function(page) {
+					$scope.page = page;
 					var viewport = page.getViewport($scope.scale);
 					var ctx = canvas.getContext('2d');
 
