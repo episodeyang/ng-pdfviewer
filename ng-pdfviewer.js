@@ -250,8 +250,8 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 			};
             var openDocCallback = function (pdfDoc){
                 $log.debug('PDF Loaded');
-                scope.pagesToShow = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : scope.pagesToShow;
-                createCanvas(iElement, scope.pagesToShow);
+                scope.currentPages = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : Math.min(scope.pagesToShow, scope.pdfDoc.numPages);
+                createCanvas(iElement, scope.currentPages);
                 scope.renderDocument();
             };
 			iAttr.$observe('src', function(v) {
@@ -288,8 +288,8 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				}
 				$log.debug('pages-to-show attribute changed, new value is <' + v + ">");
 				console.log(scope.pdfDoc.numPages);
-				scope.pagesToShow = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : scope.pagesToShow;
-				createCanvas(iElement, scope.pagesToShow);
+				scope.currentPages = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : Math.min(scope.pagesToShow, scope.pdfDoc.numPages);
+				createCanvas(iElement, scope.currentPages );
 				scope.renderDocument();
 				return;
 			});
