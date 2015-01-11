@@ -7,14 +7,16 @@
  */
 
 angular.module('ngPDFViewer', []).
-directive('pdfviewer', [ '$log', '$q', function($log, $q) {
-    var _pageToShow = 1;
+directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) {
 	var canvases = [];
 	var instance_id = null;
 
 	return {
 		restrict: "E",
-		template: '',
+		template:
+			'<div class="scroll-window"></div>' +
+            '<div class="control-popover">' +
+			'</div>',
 		scope: {
 			onPageLoad: '&',
 			loadProgress: '&',
@@ -22,9 +24,11 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
 			id: '=',
 			pdfUri: '=pdfUri',
 			pagesToShow: '@',
-			scale: '@'
+			scale: '@',
+			downloadFilename: '=',
+			scaleBy: '@'
 		},
-		controller: [ '$scope', function($scope) {
+		controller: ["$scope", "$element", "$attrs", function ($scope, $element, $attrs) {
 			$scope.pageNum = 1;
 			$scope.pdfDoc = null;
 			$scope.renderInProgress = false;
@@ -36,10 +40,66 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
 				}
 			};
 			$scope.setScale = function (newValue) {
-				if (angular.isNumber(newValue)) {
-					$scope.scale = newValue || 1;
+				console.log('inside scope.setScale');
+				console.log(newValue);
+				if (newValue === 'byWidth') {
+					var windowWidth = $scope.scrollWindow[0].offsetWidth;
+					$scope.scale = windowWidth/page.getViewport(1).width;
+				} else if (angular.isNumber(newValue) && newValue !== 0) {
+					$scope.scale = newValue;
 					$scope.forceReRender = true;
+				} else {
+					$scope.scale = 1;
 				}
+			};
+			$scope.setScaleAndRender = function(scale) {
+				console.log("set scale and render");
+				$scope.setScale(scale);
+				$scope.renderDocument();
+			};
+			$scope.incScale = function () {
+				console.log("inc scale");
+				$scope.setScale($scope.scale * 1.1);
+				$scope.renderDocument();
+			};
+			$scope.decScale = function () {
+				console.log("dec scale");
+				$scope.setScale($scope.scale * 0.9);
+				$scope.renderDocument();
+			};
+			$scope.fitByWidth = function () {
+				console.log("fitByWidth");
+				$scope.setScale('byWidth');
+				$scope.renderDocument();
+			};
+			function b64toBlob(b64Data, contentType, sliceSize) {
+				contentType = contentType || '';
+				sliceSize = sliceSize || 512;
+
+				var byteCharacters = atob(b64Data);
+				var byteArrays = [];
+
+				for (var offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+					var slice = byteCharacters.slice(offset, offset + sliceSize);
+
+					var byteNumbers = new Array(slice.length);
+					for (var i = 0; i < slice.length; i++) {
+						byteNumbers[i] = slice.charCodeAt(i);
+					}
+
+					var byteArray = new Uint8Array(byteNumbers);
+
+					byteArrays.push(byteArray);
+				}
+
+				var blob = new Blob(byteArrays, {type: contentType});
+				return blob;
+			}
+			$scope.fileDownloadHandler = function () {
+				console.log('downloading pdf as a file');
+				var index = $scope.pdfUri.search(/;base64,/i) + 8;
+				var blob = b64toBlob($scope.pdfUri.slice(index), {type: 'application/pdf'});
+				saveAs(blob, $scope.downloadFilename);
 			};
 			$scope.renderDocument = function () {
 				$log.debug("Render Document");
@@ -156,8 +216,22 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
 		} ],
 		link: function(scope, iElement, iAttr) {
 			var instance_id = iAttr.id;
+			scope.scrollWindow = angular.element(iElement[0].querySelectorAll('.scroll-window'));
+			scope.controlPopover = angular.element(iElement[0].querySelectorAll('.control-popover'));
+			var group = angular.element('<div class="btn-group" role="group"></div>');
+			var incScaleButton = angular.element('<button class="btn btn-default" ng-click="incScale()"><i class="fa fa-plus"></i></button>');
+			var decScaleButton = angular.element('<button class="btn btn-default" ng-click="decScale()"><i class="fa fa-minus"></i></button>');
+			var fitByWidth = angular.element('<button class="btn btn-default" ng-click="fitByWidth()"><i class="fa fa-arrows-h"></i></button>');
+			var downloadButton = angular.element('<button class="btn btn-default" ng-click="fileDownloadHandler()"><i class="fa fa-save"></i></button>');
+			group.append(incScaleButton);
+			group.append(decScaleButton);
+			group.append(fitByWidth);
+			group.append(downloadButton);
+			$compile(group)(scope);
+			scope.controlPopover.append(group);
+
 			var createCanvas = function(iElement, count){
-				canvases = iElement.find('canvas');
+				canvases = scope.scrollWindow.find('canvas');
 
 				if (canvases.length > count) {
 					//I need to remove canvases
@@ -169,7 +243,7 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
 					for (var i = canvases.length; i < count; i++) {
 						var tmpCanvas = angular.element('<canvas>');
 						tmpCanvas[0].setAttribute("id", "page" + (i + 1));
-						iElement.append(tmpCanvas);
+						scope.scrollWindow.append(tmpCanvas);
 					}
 				}
 				canvases = iElement.find('canvas');
@@ -177,7 +251,6 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
             var openDocCallback = function (pdfDoc){
                 $log.debug('PDF Loaded');
                 scope.pagesToShow = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : scope.pagesToShow;
-				console.log(scope.pagesToShow);
                 createCanvas(iElement, scope.pagesToShow);
                 scope.renderDocument();
             };
@@ -205,22 +278,30 @@ directive('pdfviewer', [ '$log', '$q', function($log, $q) {
 				$log.debug('observerd pages to show change <' + v + '>');
 				$log.debug('renderInProgress: <' + scope.renderInProgress + '>');
 				$log.debug('pagesToShow is number? : <' + angular.isNumber(parseInt(v)) + '>');
-				if (scope.pdfDoc == null || scope.renderInProgress || !angular.isNumber(parseInt(v))) {
-					scope.pagesToShow = _pageToShow;
+				if (!angular.isNumber(parseInt(v))) {
+					scope.pagesToShow = 0;
+				}
+				if (scope.pdfDoc == null || scope.renderInProgress ) {
+					/* todo: should cancel the previous render instead. */
+					scope.pagesToShow = v;
 					return;
 				}
 				$log.debug('pages-to-show attribute changed, new value is <' + v + ">");
-				console.log(scope.pdfDoc);
+				console.log(scope.pdfDoc.numPages);
 				scope.pagesToShow = scope.pagesToShow == 0 ? scope.pdfDoc.numPages : scope.pagesToShow;
 				createCanvas(iElement, scope.pagesToShow);
 				scope.renderDocument();
+				return;
 			});
 			iAttr.$observe('scale', function (v) {
 				//SKIP if rendering is in progress or document not loaded
 				$log.debug('observerd scale change <' + v + '>');
-				if (scope.pdfDoc == null || scope.renderInProgress || !angular.isNumber(parseInt(v)))
-					return;
-				$scope.forceReRender = true;
+				scope.setScale(v);
+				if (scope.pdfDoc == null || scope.renderInProgress) {
+					/* todo: bug: if cancel progress here, nothing shows */
+					//return;
+				}
+				scope.forceReRender = true;
 				$log.debug('scale attribute changed, new value is <' + v + ">");
 				scope.renderDocument();
 			});
