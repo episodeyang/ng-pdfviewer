@@ -62,7 +62,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				$scope.setScale('fitWidth');
 				$scope.renderDocument();
 			};
-			function b64toBlob(b64Data, contentType, sliceSize) {
+			$scope.b64toBlob = function (b64Data, contentType, sliceSize) {
 				contentType = contentType || '';
 				sliceSize = sliceSize || 512;
 
@@ -77,19 +77,45 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 						byteNumbers[i] = slice.charCodeAt(i);
 					}
 
+					/* Unit8Array is not available in safari yet */
 					var byteArray = new Uint8Array(byteNumbers);
 
 					byteArrays.push(byteArray);
 				}
 
-				var blob = new Blob(byteArrays, {type: contentType});
+				/* somehow the chuncked way of constructing the blob does not work in safari
+				* old code construct new Blob(byteArrays) does not work in safari.
+				* new code concats the arrays first.
+				* */
+				var blob = new Blob([].concat(byteArrays), {type: contentType});
 				return blob;
-			}
+			};
+			var BASE64_MARKER = ';base64,';
+			$scope.convertDataURIToBinary = function (dataURI) {
+				var base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+				var base64 = dataURI.substring(base64Index);
+				var raw = window.atob(base64);
+				var rawLength = raw.length;
+				var array = new Uint8Array(new ArrayBuffer(rawLength));
+
+				for(i = 0; i < rawLength; i++) {
+					array[i] = raw.charCodeAt(i);
+				}
+				return array;
+			};
 			$scope.fileDownloadHandler = function () {
 				console.log('downloading pdf as a file');
-				var index = $scope.pdfUri.search(/;base64,/i) + 8;
-				var blob = b64toBlob($scope.pdfUri.slice(index), {type: 'application/pdf'});
+				var index = $scope.pdfUri.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+				var blob = $scope.b64toBlob($scope.pdfUri.slice(index), 'application/pdf');
+				console.log(blob);
 				saveAs(blob, $scope.downloadFilename);
+
+				///* somehow the chuncked way of constructing the blob does not work in safari */
+				//var uInt8Arry = $scope.convertDataURIToBinary($scope.pdfUri);
+				//console.log(uInt8Arry);
+				//var blob = new Blob([uInt8Arry], {type: 'application/pdf'});
+				//console.log(blob);
+				//saveAs(blob, $scope.downloadFilename);
 			};
 			$scope.renderDocument = function () {
 				$log.debug("Render Document");
@@ -263,12 +289,16 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 					});
 				}
 			});
+
 			scope.$watch('pdfUri', function (newVal, oldVal){
 				/* somehow initial load always have oldVal updated. */
 				if (!newVal && !oldVal || newVal === oldVal) return;
+				/* for safari, the uri is not supported without COR. So here we convert
+				 * everything to a binary blob
+				 * In Chrome, one can load scope.pdfUri directly. */
 				scope.pageNum = 1;
-				$log.debug(scope.pdfUri.toString());
-				scope.loadPDF(scope.pdfUri).then(openDocCallback, function(meg){
+				var uInt8Arry = scope.convertDataURIToBinary(scope.pdfUri);
+				scope.loadPDF(uInt8Arry).then(openDocCallback, function(meg){
 					$log.debug(meg);
 				});
 			});
