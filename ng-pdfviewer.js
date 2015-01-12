@@ -87,7 +87,8 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				* old code construct new Blob(byteArrays) does not work in safari.
 				* new code concats the arrays first.
 				* */
-				var blob = new Blob([].concat(byteArrays), {type: contentType});
+				console.log([].concat(byteArrays));
+				var blob = new Blob(byteArrays, {type: contentType});
 				return blob;
 			};
 			var BASE64_MARKER = ';base64,';
@@ -110,12 +111,16 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				console.log(blob);
 				saveAs(blob, $scope.downloadFilename);
 
-				///* somehow the chuncked way of constructing the blob does not work in safari */
-				//var uInt8Arry = $scope.convertDataURIToBinary($scope.pdfUri);
-				//console.log(uInt8Arry);
-				//var blob = new Blob([uInt8Arry], {type: 'application/pdf'});
-				//console.log(blob);
-				//saveAs(blob, $scope.downloadFilename);
+				/* somehow the non-chuncked way of constructing the blob does not work in safari
+				 * there *has* to be a bracket around the binary array.
+				 * aka
+				 *         new Blob([  uInt8Array  ], {type: ''})
+				 * */
+				/** var uInt8Arry = $scope.convertDataURIToBinary($scope.pdfUri);
+				console.log(uInt8Arry);
+				var blob = new Blob([uInt8Arry], {type: 'application/pdf'});
+				console.log(blob);
+				saveAs(blob, $scope.downloadFilename); */
 			};
 			$scope.renderDocument = function () {
 				$log.debug("Render Document");
