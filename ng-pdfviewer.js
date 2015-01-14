@@ -187,7 +187,12 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 					canvas.style.height = (PRINT_OUTPUT_SCALE * viewport.height) + 'px';
 					var cssScale = 'scale(' + (1 / PRINT_OUTPUT_SCALE) + ', ' +
 						(1 / PRINT_OUTPUT_SCALE) + ')';
-					angular.element(canvas).css('transform' , cssScale).css('transformOrigin' , '0% 0%');
+					angular.element(canvas)
+						.css('transform' , cssScale)
+						.css('transformOrigin' , '0% 0%')
+						.css('margin-bottom' , canvas.height / PRINT_OUTPUT_SCALE)
+						.css('margin-right' , canvas.width / PRINT_OUTPUT_SCALE)
+					;
 					ctx.scale(PRINT_OUTPUT_SCALE, PRINT_OUTPUT_SCALE);
 
 					page.render({ canvasContext: ctx, viewport: viewport , intent: 'print'}).then(
