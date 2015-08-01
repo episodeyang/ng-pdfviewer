@@ -278,7 +278,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 						}
 					});
 				};
-			},
+			};
 
 			$scope.$on('pdfviewer.setScale', function(evt, id, scale) {
 				if (id !== instance_id) {
