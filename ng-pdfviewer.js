@@ -189,7 +189,11 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 						(1 / PRINT_OUTPUT_SCALE) + ')';
 					angular.element(canvas)
 						.css('transform' , cssScale)
-						.css('transformOrigin' , '0% 0%')
+						.css('-moz-transform' , cssScale)
+						.css('-webkit-transform' , cssScale)
+						.css('transform-origin' , '0% 0%')
+						.css('-moz-transform-origin' , '0% 0%')
+						.css('-webkit-transform-origin' , '0% 0%')
 						.css('margin-bottom' , - canvas.height / PRINT_OUTPUT_SCALE)
 						.css('margin-right' , - canvas.width / PRINT_OUTPUT_SCALE)
 					;
