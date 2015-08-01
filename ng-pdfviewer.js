@@ -189,9 +189,11 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 						(1 / PRINT_OUTPUT_SCALE) + ')';
 					angular.element(canvas)
 						.css('transform' , cssScale)
+						.css('-ms-transform' , cssScale)
 						.css('-moz-transform' , cssScale)
 						.css('-webkit-transform' , cssScale)
 						.css('transform-origin' , '0% 0%')
+						.css('-ms-transform-origin' , '0% 0%')
 						.css('-moz-transform-origin' , '0% 0%')
 						.css('-webkit-transform-origin' , '0% 0%')
 						.css('margin-bottom' , - canvas.height / PRINT_OUTPUT_SCALE)
@@ -232,7 +234,13 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 				var cssScale = 'scale(' + (1 / PRINT_OUTPUT_SCALE) + ', ' +
 					(1 / PRINT_OUTPUT_SCALE) + ')';
 				CustomStyle.setProp('transform' , canvas, cssScale);
-				CustomStyle.setProp('transformOrigin' , canvas, '0% 0%');
+				CustomStyle.setProp('-ms-transform' , canvas, cssScale);
+				CustomStyle.setProp('-moz-transform' , canvas, cssScale);
+				CustomStyle.setProp('-webkit-transform' , canvas, cssScale);
+				CustomStyle.setProp('transform-origin' , canvas, '0% 0%');
+				CustomStyle.setProp('-ms-transform-origin' , canvas, '0% 0%');
+				CustomStyle.setProp('-moz-transform-origin' , canvas, '0% 0%');
+				CustomStyle.setProp('-webkit-transform-origin' , canvas, '0% 0%');
 
 				var printContainer = document.getElementById('printContainer');
 				var canvasWrapper = document.createElement('div');
