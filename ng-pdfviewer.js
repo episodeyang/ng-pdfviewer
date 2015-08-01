@@ -339,7 +339,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 			scope.controlPopover.append(group);
 
 			var createCanvas = function(iElement, count){
-				canvases = scope.scrollWindow.find('canvas');
+				canvases = angular.element(iElement[0].querySelectorAll('.scroll-window > canvas'));
 
 				if (canvases.length > count) {
 					//I need to remove canvases
@@ -354,7 +354,7 @@ directive('pdfviewer', [ '$log', '$q', '$compile', function($log, $q, $compile) 
 						scope.scrollWindow.append(tmpCanvas);
 					}
 				}
-				canvases = iElement.find('canvas');
+				canvases = angular.element(iElement[0].querySelectorAll('.scroll-window > canvas'));
 			};
             var openDocCallback = function (pdfDoc){
                 $log.debug('PDF Loaded');
